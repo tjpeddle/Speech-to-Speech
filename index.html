@@ -6,74 +6,107 @@
 <title>SpeakBack</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Monoton&family=VT323&family=Atkinson+Hyperlegible:wght@400;700&display=swap">
 <style>
-/* Layout: one calm column — big spoken-text panel and a single start button up top, history and learning below. */
+/* Layout: an 80s cassette deck — sunset stripes, a glowing amber display window, chunky piano-key buttons, VU meter. Deliberately one dark look. */
 :root{
-  --bg:#f6f4fa; --surface:#ffffff; --ink:#1f1a2e; --muted:#5d566e; --line:#dcd6e8;
-  --accent:#4f2d7f; --accent-ink:#ffffff; --listen:#1d7a55; --speak:#b5541c; --danger:#a4262c;
+  --body:#1d1915; --panel:#2b251f; --panel-hi:#3a3229; --screen:#120b04; --amber:#ffb347; --amber-dim:#a8732e;
+  --cream:#f2e4c4; --muted:#b9a88a; --line:#4a3f33;
+  --s1:#ffd23f; --s2:#ff9a1f; --s3:#ff5b2e; --s4:#d6265b; --teal:#3fd0c9; --red:#ff4d3d;
+  --display:"Monoton","Arial Black",Impact,sans-serif;
+  --lcd:"VT323","Courier New",ui-monospace,monospace;
   --font:"Atkinson Hyperlegible",system-ui,-apple-system,"Segoe UI",Arial,sans-serif;
-  color-scheme:light;
+  color-scheme:dark;
 }
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
-  --bg:#16131d; --surface:#211d2b; --ink:#f1edf8; --muted:#b2aac4; --line:#3a3348;
-  --accent:#b49be0; --accent-ink:#1a1225; --listen:#5fd3a0; --speak:#f0a06a; --danger:#ff8a8f; color-scheme:dark}}
-:root[data-theme="dark"]{
-  --bg:#16131d; --surface:#211d2b; --ink:#f1edf8; --muted:#b2aac4; --line:#3a3348;
-  --accent:#b49be0; --accent-ink:#1a1225; --listen:#5fd3a0; --speak:#f0a06a; --danger:#ff8a8f; color-scheme:dark}
 *{box-sizing:border-box}
 html,body{margin:0}
-body{background:var(--bg);color:var(--ink);font:16px/1.5 var(--font);
-  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:20px 48px}
-.wrap{max-width:860px;margin:0 auto;display:flex;flex-direction:column;gap:20px}
-header{display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap}
-h1{font-size:1.5rem;margin:0;letter-spacing:-.01em}
-.sub{color:var(--muted);margin:0;font-size:.95rem}
-.status{display:inline-flex;align-items:center;gap:8px;font-weight:700;font-size:.85rem;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
-.dot{width:12px;height:12px;border-radius:50%;background:var(--line)}
-.status[data-s="listening"]{color:var(--listen)} .status[data-s="listening"] .dot{background:var(--listen);animation:pulse 1.4s infinite}
-.status[data-s="speaking"]{color:var(--speak)} .status[data-s="speaking"] .dot{background:var(--speak)}
+body{background:var(--body);color:var(--cream);font:16px/1.5 var(--font);
+  background-image:radial-gradient(circle at 50% -10%,#3b2a1c 0,transparent 60%),repeating-linear-gradient(90deg,rgba(255,255,255,.015) 0 2px,transparent 2px 5px);
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:24px 48px;min-height:100vh}
+.wrap{max-width:900px;margin:0 auto;display:flex;flex-direction:column;gap:22px}
+
+/* deck shell */
+.deck{background:linear-gradient(180deg,var(--panel-hi),var(--panel));border:2px solid #000;border-radius:18px;box-shadow:0 2px 0 #4d4236 inset,0 18px 40px rgba(0,0,0,.55);overflow:hidden}
+.stripes{height:22px;background:linear-gradient(180deg,var(--s1) 0 25%,var(--s2) 25% 50%,var(--s3) 50% 75%,var(--s4) 75%)}
+.deck-inner{padding:20px 22px 24px;display:flex;flex-direction:column;gap:18px}
+header{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+h1{font-family:var(--display);font-weight:400;font-size:clamp(2rem,6vw,3.2rem);line-height:1;margin:0;color:var(--s2);
+  text-shadow:0 0 18px rgba(255,154,31,.45);letter-spacing:.02em}
+.sub{color:var(--muted);margin:6px 0 0;font-size:.95rem;letter-spacing:.04em}
+
+/* LED status */
+.status{display:inline-flex;align-items:center;gap:10px;font-family:var(--lcd);font-size:1.5rem;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);
+  background:#0d0905;border:2px solid #000;border-radius:8px;padding:2px 14px;box-shadow:0 1px 0 #4d4236}
+.dot{width:14px;height:14px;border-radius:50%;background:#3a2c1c;box-shadow:inset 0 -2px 3px rgba(0,0,0,.6)}
+.status[data-s="listening"]{color:var(--teal)} .status[data-s="listening"] .dot{background:var(--teal);box-shadow:0 0 10px var(--teal);animation:pulse 1.2s infinite}
+.status[data-s="speaking"]{color:var(--red)} .status[data-s="speaking"] .dot{background:var(--red);box-shadow:0 0 10px var(--red)}
 @keyframes pulse{50%{opacity:.35}}
-@media (prefers-reduced-motion:reduce){.dot{animation:none!important}}
-.stage{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:24px;display:flex;flex-direction:column;gap:14px;min-height:220px}
-.said{font-size:clamp(1.8rem,5vw,2.8rem);line-height:1.2;font-weight:700;margin:0;text-wrap:balance;overflow-wrap:anywhere}
-.said.empty{color:var(--muted);font-weight:400;font-size:1.3rem}
-.live{color:var(--muted);font-style:italic;min-height:1.5em;margin:0;overflow-wrap:anywhere}
+
+/* amber display window */
+.stage{background:var(--screen);border:3px solid #000;border-radius:12px;padding:20px 22px;display:flex;flex-direction:column;gap:12px;min-height:200px;position:relative;overflow:hidden;
+  box-shadow:inset 0 0 40px rgba(255,179,71,.12),inset 0 3px 8px rgba(0,0,0,.8)}
+.stage::after{content:"";position:absolute;inset:0;pointer-events:none;background:repeating-linear-gradient(0deg,rgba(0,0,0,.28) 0 1px,transparent 1px 3px)}
+.screen-label{font-family:var(--lcd);font-size:1rem;letter-spacing:.2em;color:var(--amber-dim);margin:0;display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.said{font-family:var(--lcd);font-size:clamp(2.2rem,6vw,3.6rem);line-height:1.05;margin:0;color:var(--amber);text-shadow:0 0 8px rgba(255,179,71,.6);overflow-wrap:anywhere;text-wrap:balance}
+.said.empty{font-size:clamp(1.5rem,4vw,2rem);color:var(--amber-dim);text-shadow:none}
+.live{font-family:var(--lcd);font-size:1.5rem;color:var(--teal);min-height:1.5em;margin:0;overflow-wrap:anywhere;opacity:.85}
+
+/* VU meter */
+.vu{display:flex;align-items:flex-end;gap:4px;height:34px}
+.vu i{flex:1;height:20%;border-radius:2px;background:linear-gradient(0deg,var(--teal) 0 55%,var(--s1) 55% 80%,var(--red) 80%);opacity:.35;transition:height .2s}
+.wrap:has(#status[data-s="listening"]) .vu i,.wrap:has(#status[data-s="speaking"]) .vu i{opacity:1;animation:vu .5s ease-in-out infinite alternate}
+.vu i:nth-child(3n){animation-duration:.37s!important}.vu i:nth-child(4n+1){animation-duration:.61s!important}.vu i:nth-child(5n+2){animation-duration:.44s!important}
+@keyframes vu{from{height:15%}to{height:100%}}
+@media (prefers-reduced-motion:reduce){.dot,.vu i{animation:none!important}}
+
+/* piano-key buttons */
 .controls{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
-button{font:inherit;cursor:pointer;border-radius:10px;border:1px solid var(--line);background:var(--surface);color:var(--ink);padding:8px 14px}
-button:focus-visible,input:focus-visible,select:focus-visible,summary:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
-.big{font-size:1.35rem;font-weight:700;padding:16px 36px;background:var(--accent);color:var(--accent-ink);border:none;min-width:200px}
-.big.on{background:var(--danger);color:#fff}
+button{font:700 .95rem var(--font);cursor:pointer;border-radius:6px;border:2px solid #000;color:var(--cream);padding:8px 14px;letter-spacing:.06em;text-transform:uppercase;
+  background:linear-gradient(180deg,#5a4d3f,#3a3128);box-shadow:0 4px 0 #120e0a,inset 0 1px 0 rgba(255,255,255,.15);transition:transform .06s,box-shadow .06s}
+button:active{transform:translateY(3px);box-shadow:0 1px 0 #120e0a,inset 0 1px 0 rgba(255,255,255,.1)}
+button:disabled{opacity:.45;cursor:default}
+button:focus-visible,input:focus-visible,select:focus-visible,summary:focus-visible{outline:3px solid var(--s1);outline-offset:3px}
+.big{font-size:1.5rem;padding:16px 40px;min-width:220px;color:#1d1209;background:linear-gradient(180deg,#ffbd5c,var(--s2));box-shadow:0 6px 0 #8a4a0d,inset 0 2px 0 rgba(255,255,255,.4)}
+.big:active{box-shadow:0 2px 0 #8a4a0d}
+.big.on{color:#fff;background:linear-gradient(180deg,#ff6d5e,#d1281b);box-shadow:0 6px 0 #6e130b,inset 0 2px 0 rgba(255,255,255,.3)}
+.big::before{content:"● ";color:var(--red)} .big.on::before{content:"■ ";color:#fff}
 .hint{color:var(--muted);font-size:.9rem}
-.cols{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+
+/* lower panels */
+.cols{display:grid;grid-template-columns:1fr 1fr;gap:22px}
 @media (max-width:720px){.cols{grid-template-columns:1fr}}
-section{min-width:0}
-h2{font-size:1rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin:0 0 10px}
+section{min-width:0;background:var(--panel);border:2px solid #000;border-radius:14px;padding:16px 18px;box-shadow:0 10px 24px rgba(0,0,0,.4)}
+h2{font-family:var(--lcd);font-weight:400;font-size:1.6rem;letter-spacing:.14em;text-transform:uppercase;color:var(--s1);margin:0 0 8px}
 ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
-.item{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px 12px;display:flex;flex-direction:column;gap:6px}
+.item{background:#1a1511;border:1px solid var(--line);border-left:4px solid var(--s3);border-radius:6px;padding:10px 12px;display:flex;flex-direction:column;gap:6px}
 .item .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 .item .txt{flex:1;min-width:0;font-weight:700;overflow-wrap:anywhere}
 .item .heard{color:var(--muted);font-size:.85rem;overflow-wrap:anywhere}
-.item button{padding:4px 10px;font-size:.9rem}
-.item input{flex:1;min-width:0;font:inherit;padding:6px 8px;border-radius:8px;border:1px solid var(--line);background:var(--bg);color:var(--ink)}
+.item button{padding:4px 10px;font-size:.78rem;box-shadow:0 3px 0 #120e0a}
+.item input{flex:1;min-width:0;font:1.3rem var(--lcd);padding:4px 8px;border-radius:4px;border:2px solid #000;background:var(--screen);color:var(--amber)}
 .empty-note{color:var(--muted);font-size:.95rem}
-.stats{display:flex;gap:16px;flex-wrap:wrap;margin-bottom:10px;font-variant-numeric:tabular-nums}
-.stats b{font-size:1.4rem;display:block}
-.stats span{color:var(--muted);font-size:.85rem}
-details{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px 16px}
-summary{cursor:pointer;font-weight:700}
+.stats{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px}
+.stats div{background:var(--screen);border:2px solid #000;border-radius:6px;padding:4px 12px;min-width:84px}
+.stats b{font:400 2rem/1 var(--lcd);color:var(--amber);display:block;text-shadow:0 0 6px rgba(255,179,71,.5);font-variant-numeric:tabular-nums}
+.stats span{color:var(--muted);font-size:.75rem;letter-spacing:.08em;text-transform:uppercase}
+details{background:var(--panel);border:2px solid #000;border-radius:14px;padding:12px 18px}
+summary{cursor:pointer;font:1.5rem var(--lcd);letter-spacing:.14em;text-transform:uppercase;color:var(--s1)}
 .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;margin-top:14px}
 label{display:flex;flex-direction:column;gap:4px;font-size:.9rem;color:var(--muted)}
-select,input[type=range]{font:inherit;width:100%}
-select{padding:6px;border-radius:8px;border:1px solid var(--line);background:var(--bg);color:var(--ink)}
-.check{flex-direction:row;align-items:center;gap:8px;color:var(--ink)}
-.btnrow{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
-.warn{background:var(--surface);border:2px solid var(--danger);border-radius:12px;padding:14px 16px}
+select,input[type=range]{font:inherit;width:100%;accent-color:var(--s2)}
+select{padding:6px;border-radius:6px;border:2px solid #000;background:var(--screen);color:var(--amber)}
+.check{flex-direction:row;align-items:center;gap:8px;color:var(--cream)}
+.btnrow{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}
+.warn{background:#2a0f0c;border:2px solid var(--red);border-radius:12px;padding:14px 16px}
 .small{font-size:.85rem;color:var(--muted)}
+.small b,.hint b{color:var(--cream)}
 </style>
 </head>
 <body>
 <div class="wrap">
+  <div class="deck">
+  <div class="stripes" aria-hidden="true"></div>
+  <div class="deck-inner">
   <header>
     <div>
       <h1>SpeakBack</h1>
@@ -87,13 +120,17 @@ select{padding:6px;border-radius:8px;border:1px solid var(--line);background:var
   </div>
 
   <div class="stage">
+    <p class="screen-label" aria-hidden="true"><span>SIDE A · VOICE</span><span>AUTO-REVERSE</span></p>
     <p class="said empty" id="said" aria-live="polite">Press Start and talk. When you pause, your words are spoken back.</p>
     <p class="live" id="live"></p>
-    <div class="controls">
-      <button class="big" id="toggle" type="button">Start</button>
-      <button id="repeat" type="button" disabled>Say it again</button>
-      <span class="hint">Spacebar also starts and stops.</span>
-    </div>
+  </div>
+  <div class="controls">
+    <button class="big" id="toggle" type="button">Start</button>
+    <button id="repeat" type="button" disabled>Say it again</button>
+    <span class="hint">Spacebar also starts and stops.</span>
+  </div>
+  <div class="vu" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+  </div>
   </div>
 
   <div class="cols">
@@ -110,6 +147,8 @@ select{padding:6px;border-radius:8px;border:1px solid var(--line);background:var
         <div><b id="nPhrases">0</b><span>saved phrases</span></div>
       </div>
       <ul id="fixes"></ul>
+      <h2 style="margin-top:16px">Saved phrases</h2>
+      <ul id="phrases"></ul>
     </section>
   </div>
 
@@ -290,7 +329,9 @@ select{padding:6px;border-radius:8px;border:1px solid var(--line);background:var
       const play = btn('Play', () => speak(h.said));
       const fix = btn('Fix', () => editMode());
       const star = btn(profile.phrases.includes(h.said) ? 'Saved' : 'Save phrase', () => {
-        if (!profile.phrases.includes(h.said)) { profile.phrases.unshift(h.said); profile.phrases = profile.phrases.slice(0, 300); save(); renderHistory(); }
+        if (profile.phrases.includes(h.said)) profile.phrases = profile.phrases.filter(x => x !== h.said);
+        else { profile.phrases.unshift(h.said); profile.phrases = profile.phrases.slice(0, 300); }
+        save(); renderHistory();
       });
       row.append(txt, play, fix, star); li.append(row);
       if (norm(h.heard) !== norm(h.said)) {
@@ -337,6 +378,15 @@ select{padding:6px;border-radius:8px;border:1px solid var(--line);background:var
       t.textContent = '“' + k + '” → ' + v;
       row.append(t, btn('Remove', () => { delete profile.fixes[k]; save(); }));
       li.append(row); ul.append(li);
+    });
+    const pl = $('phrases'); pl.innerHTML = '';
+    if (!profile.phrases.length) { pl.innerHTML = '<li class="empty-note">No saved phrases yet.</li>'; return; }
+    profile.phrases.forEach(p => {
+      const li = document.createElement('li'); li.className = 'item';
+      const row = document.createElement('div'); row.className = 'row';
+      const t = document.createElement('span'); t.className = 'txt'; t.textContent = p;
+      row.append(t, btn('Remove', () => { profile.phrases = profile.phrases.filter(x => x !== p); save(); renderHistory(); }));
+      li.append(row); pl.append(li);
     });
   }
 
