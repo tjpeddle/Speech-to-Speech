@@ -1,0 +1,416 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>SpeakBack</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&display=swap">
+<style>
+/* Layout: one calm column — big spoken-text panel and a single start button up top, history and learning below. */
+:root{
+  --bg:#f6f4fa; --surface:#ffffff; --ink:#1f1a2e; --muted:#5d566e; --line:#dcd6e8;
+  --accent:#4f2d7f; --accent-ink:#ffffff; --listen:#1d7a55; --speak:#b5541c; --danger:#a4262c;
+  --font:"Atkinson Hyperlegible",system-ui,-apple-system,"Segoe UI",Arial,sans-serif;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#16131d; --surface:#211d2b; --ink:#f1edf8; --muted:#b2aac4; --line:#3a3348;
+  --accent:#b49be0; --accent-ink:#1a1225; --listen:#5fd3a0; --speak:#f0a06a; --danger:#ff8a8f; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#16131d; --surface:#211d2b; --ink:#f1edf8; --muted:#b2aac4; --line:#3a3348;
+  --accent:#b49be0; --accent-ink:#1a1225; --listen:#5fd3a0; --speak:#f0a06a; --danger:#ff8a8f; color-scheme:dark}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font:16px/1.5 var(--font);
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:20px 48px}
+.wrap{max-width:860px;margin:0 auto;display:flex;flex-direction:column;gap:20px}
+header{display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap}
+h1{font-size:1.5rem;margin:0;letter-spacing:-.01em}
+.sub{color:var(--muted);margin:0;font-size:.95rem}
+.status{display:inline-flex;align-items:center;gap:8px;font-weight:700;font-size:.85rem;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.dot{width:12px;height:12px;border-radius:50%;background:var(--line)}
+.status[data-s="listening"]{color:var(--listen)} .status[data-s="listening"] .dot{background:var(--listen);animation:pulse 1.4s infinite}
+.status[data-s="speaking"]{color:var(--speak)} .status[data-s="speaking"] .dot{background:var(--speak)}
+@keyframes pulse{50%{opacity:.35}}
+@media (prefers-reduced-motion:reduce){.dot{animation:none!important}}
+.stage{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:24px;display:flex;flex-direction:column;gap:14px;min-height:220px}
+.said{font-size:clamp(1.8rem,5vw,2.8rem);line-height:1.2;font-weight:700;margin:0;text-wrap:balance;overflow-wrap:anywhere}
+.said.empty{color:var(--muted);font-weight:400;font-size:1.3rem}
+.live{color:var(--muted);font-style:italic;min-height:1.5em;margin:0;overflow-wrap:anywhere}
+.controls{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+button{font:inherit;cursor:pointer;border-radius:10px;border:1px solid var(--line);background:var(--surface);color:var(--ink);padding:8px 14px}
+button:focus-visible,input:focus-visible,select:focus-visible,summary:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.big{font-size:1.35rem;font-weight:700;padding:16px 36px;background:var(--accent);color:var(--accent-ink);border:none;min-width:200px}
+.big.on{background:var(--danger);color:#fff}
+.hint{color:var(--muted);font-size:.9rem}
+.cols{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+@media (max-width:720px){.cols{grid-template-columns:1fr}}
+section{min-width:0}
+h2{font-size:1rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin:0 0 10px}
+ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
+.item{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px 12px;display:flex;flex-direction:column;gap:6px}
+.item .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.item .txt{flex:1;min-width:0;font-weight:700;overflow-wrap:anywhere}
+.item .heard{color:var(--muted);font-size:.85rem;overflow-wrap:anywhere}
+.item button{padding:4px 10px;font-size:.9rem}
+.item input{flex:1;min-width:0;font:inherit;padding:6px 8px;border-radius:8px;border:1px solid var(--line);background:var(--bg);color:var(--ink)}
+.empty-note{color:var(--muted);font-size:.95rem}
+.stats{display:flex;gap:16px;flex-wrap:wrap;margin-bottom:10px;font-variant-numeric:tabular-nums}
+.stats b{font-size:1.4rem;display:block}
+.stats span{color:var(--muted);font-size:.85rem}
+details{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px 16px}
+summary{cursor:pointer;font-weight:700}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;margin-top:14px}
+label{display:flex;flex-direction:column;gap:4px;font-size:.9rem;color:var(--muted)}
+select,input[type=range]{font:inherit;width:100%}
+select{padding:6px;border-radius:8px;border:1px solid var(--line);background:var(--bg);color:var(--ink)}
+.check{flex-direction:row;align-items:center;gap:8px;color:var(--ink)}
+.btnrow{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+.warn{background:var(--surface);border:2px solid var(--danger);border-radius:12px;padding:14px 16px}
+.small{font-size:.85rem;color:var(--muted)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <h1>SpeakBack</h1>
+      <p class="sub">Talk, pause, and it speaks your words out loud.</p>
+    </div>
+    <div class="status" id="status" data-s="idle" role="status" aria-live="polite"><span class="dot"></span><span id="statusText">Ready</span></div>
+  </header>
+
+  <div class="warn" id="unsupported" hidden>
+    This browser can't do speech recognition. Open this page in <b>Google Chrome</b> or <b>Microsoft Edge</b>.
+  </div>
+
+  <div class="stage">
+    <p class="said empty" id="said" aria-live="polite">Press Start and talk. When you pause, your words are spoken back.</p>
+    <p class="live" id="live"></p>
+    <div class="controls">
+      <button class="big" id="toggle" type="button">Start</button>
+      <button id="repeat" type="button" disabled>Say it again</button>
+      <span class="hint">Spacebar also starts and stops.</span>
+    </div>
+  </div>
+
+  <div class="cols">
+    <section>
+      <h2>What was said</h2>
+      <p class="small" style="margin:0 0 10px">If a line came out wrong, press <b>Fix</b> and type what was meant. SpeakBack learns from every fix.</p>
+      <ul id="history"><li class="empty-note">Nothing yet.</li></ul>
+    </section>
+    <section>
+      <h2>What it has learned</h2>
+      <div class="stats">
+        <div><b id="nWords">0</b><span>words heard</span></div>
+        <div><b id="nFixes">0</b><span>fixes</span></div>
+        <div><b id="nPhrases">0</b><span>saved phrases</span></div>
+      </div>
+      <ul id="fixes"></ul>
+    </section>
+  </div>
+
+  <details>
+    <summary>Settings</summary>
+    <div class="grid">
+      <label for="voice">Voice<select id="voice"></select></label>
+      <label for="lang">Language heard<select id="lang">
+        <option value="en-US">English (US)</option><option value="en-GB">English (UK)</option>
+        <option value="es-US">Spanish (US)</option><option value="es-ES">Spanish (Spain)</option>
+        <option value="fr-FR">French</option><option value="zh-CN">Chinese (Mandarin)</option>
+      </select></label>
+      <label for="rate">Speaking speed: <span id="rateVal"></span><input type="range" id="rate" min="0.6" max="1.6" step="0.1"></label>
+      <label for="pause">Pause before speaking: <span id="pauseVal"></span><input type="range" id="pause" min="500" max="3000" step="100"></label>
+      <label class="check" for="snap"><input type="checkbox" id="snap"> Match close guesses to saved phrases</label>
+    </div>
+    <div class="btnrow">
+      <button id="export" type="button">Save student profile</button>
+      <button id="importBtn" type="button">Load student profile</button>
+      <input type="file" id="importFile" accept="application/json,.json" hidden>
+      <button id="reset" type="button">Clear everything learned</button>
+      <span id="resetConfirm" hidden><button id="resetYes" type="button" style="border-color:var(--danger);color:var(--danger)">Yes, clear it</button> <button id="resetNo" type="button">Cancel</button></span>
+    </div>
+    <p class="small">Everything learned is stored in this browser on this computer only. Use <b>Save student profile</b> to move it to another computer. Speech recognition in Chrome and Edge is processed by Google or Microsoft servers.</p>
+  </details>
+</div>
+
+<script>
+(() => {
+  const $ = id => document.getElementById(id);
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  const KEY = 'speakback.v1';
+  const defaults = { words:{}, fixes:{}, phrases:[], settings:{ rate:1, pause:1000, voice:'', lang:'en-US', snap:true } };
+
+  let profile;
+  try { profile = JSON.parse(localStorage.getItem(KEY)) || null; } catch(e) { profile = null; }
+  if (!profile) profile = JSON.parse(JSON.stringify(defaults));
+  profile.settings = Object.assign({}, defaults.settings, profile.settings || {});
+  const save = () => { try { localStorage.setItem(KEY, JSON.stringify(profile)); } catch(e) {} renderLearned(); };
+
+  const history = [];
+  let rec = null, running = false, speaking = false, finals = [], interim = '', timer = null, handled = new Set(), lastSaid = '', wakeLock = null;
+
+  // ---------- text helpers ----------
+  const norm = s => s.toLowerCase().replace(/[^\p{L}\p{N}\s']/gu, ' ').replace(/\s+/g, ' ').trim();
+  const pretty = s => { s = s.replace(/\bi\b/g, 'I').trim(); return s.charAt(0).toUpperCase() + s.slice(1); };
+  function lev(a, b) {
+    const m = a.length, n = b.length; if (!m) return n; if (!n) return m;
+    let prev = Array.from({length:n+1}, (_, j) => j);
+    for (let i = 1; i <= m; i++) {
+      const cur = [i];
+      for (let j = 1; j <= n; j++) cur[j] = Math.min(prev[j]+1, cur[j-1]+1, prev[j-1] + (a[i-1] === b[j-1] ? 0 : 1));
+      prev = cur;
+    }
+    return prev[n];
+  }
+
+  // Pick the alternative that best fits this student's own vocabulary.
+  function pickBest(alts) {
+    let best = alts[0], bestScore = -Infinity;
+    alts.forEach((a, i) => {
+      const w = norm(a.t).split(' ').filter(Boolean);
+      if (!w.length) return;
+      const familiarity = w.reduce((s, x) => s + Math.log1p(profile.words[x] || 0), 0) / w.length;
+      const fixed = profile.fixes[norm(a.t)] ? 3 : 0;
+      const score = familiarity * 1.5 + fixed + (a.c || 0) - i * 0.15;
+      if (score > bestScore) { bestScore = score; best = a; }
+    });
+    return best.t;
+  }
+
+  function applyFixes(text) {
+    let t = ' ' + norm(text) + ' ';
+    Object.keys(profile.fixes).sort((a, b) => b.length - a.length).forEach(k => {
+      if (k) t = t.split(' ' + k + ' ').join(' ' + norm(profile.fixes[k]) + ' ');
+    });
+    t = t.trim();
+    if (profile.settings.snap && t.length > 3 && profile.phrases.length) {
+      let best = null, bestSim = 0;
+      profile.phrases.forEach(p => {
+        const np = norm(p), sim = 1 - lev(t, np) / Math.max(t.length, np.length);
+        if (sim > bestSim) { bestSim = sim; best = p; }
+      });
+      if (best && bestSim >= 0.8) return best;
+    }
+    return pretty(t);
+  }
+
+  function learnWords(text) {
+    norm(text).split(' ').filter(Boolean).forEach(w => profile.words[w] = (profile.words[w] || 0) + 1);
+  }
+
+  // ---------- speech out ----------
+  function speak(text) {
+    if (!text) return;
+    speaking = true;
+    if (rec) { try { rec.abort(); } catch(e) {} }
+    setStatus('speaking', 'Speaking');
+    speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(text);
+    const v = speechSynthesis.getVoices().find(v => v.voiceURI === profile.settings.voice);
+    if (v) { u.voice = v; u.lang = v.lang; }
+    u.rate = profile.settings.rate;
+    let done = false;
+    const finish = () => {
+      if (done) return; done = true; speaking = false;
+      if (running) { setStatus('listening', 'Listening'); startRec(); } else setStatus('idle', 'Ready');
+    };
+    u.onend = finish; u.onerror = finish;
+    setTimeout(finish, Math.max(4000, text.length * 140 / u.rate)); // Chrome sometimes skips onend
+    speechSynthesis.speak(u);
+  }
+
+  // ---------- speech in ----------
+  function startRec() {
+    if (!SR || speaking) return;
+    rec = new SR();
+    rec.lang = profile.settings.lang;
+    rec.continuous = true; rec.interimResults = true; rec.maxAlternatives = 5;
+    handled = new Set(); finals = []; interim = '';
+    rec.onresult = onResult;
+    rec.onerror = e => {
+      if (e.error === 'not-allowed' || e.error === 'service-not-allowed') {
+        stop(); $('live').textContent = 'Microphone access was blocked. Allow the microphone in the browser address bar, then press Start.';
+      }
+    };
+    rec.onend = () => { if (running && !speaking) { try { rec.start(); } catch(e) {} } };
+    try { rec.start(); } catch(e) {}
+  }
+
+  function onResult(e) {
+    if (speaking) return;
+    let live = '';
+    for (let i = e.resultIndex; i < e.results.length; i++) {
+      const r = e.results[i];
+      if (r.isFinal) {
+        if (!handled.has(i)) { handled.add(i); finals.push(Array.from(r).map(a => ({ t:a.transcript, c:a.confidence || 0 }))); }
+      } else live += r[0].transcript;
+    }
+    interim = live;
+    $('live').textContent = [...finals.map(f => f[0].t), interim].join(' ').trim();
+    clearTimeout(timer);
+    timer = setTimeout(flush, profile.settings.pause);
+  }
+
+  function flush() {
+    const heard = [...finals.map(pickBest), interim].join(' ').replace(/\s+/g, ' ').trim();
+    finals = []; interim = '';
+    if (!heard) return;
+    const said = applyFixes(heard);
+    learnWords(said); save();
+    addHistory(heard, said);
+    show(said);
+    speak(said);
+  }
+
+  // ---------- UI ----------
+  function setStatus(s, t) { $('status').dataset.s = s; $('statusText').textContent = t; }
+  function show(text) {
+    lastSaid = text;
+    const el = $('said'); el.textContent = text; el.classList.remove('empty');
+    $('live').textContent = ''; $('repeat').disabled = false;
+  }
+
+  function addHistory(heard, said) {
+    history.unshift({ heard, said });
+    if (history.length > 30) history.pop();
+    renderHistory();
+  }
+
+  function renderHistory() {
+    const ul = $('history'); ul.innerHTML = '';
+    if (!history.length) { ul.innerHTML = '<li class="empty-note">Nothing yet.</li>'; return; }
+    history.forEach((h, idx) => {
+      const li = document.createElement('li'); li.className = 'item';
+      const row = document.createElement('div'); row.className = 'row';
+      const txt = document.createElement('span'); txt.className = 'txt'; txt.textContent = h.said;
+      const play = btn('Play', () => speak(h.said));
+      const fix = btn('Fix', () => editMode());
+      const star = btn(profile.phrases.includes(h.said) ? 'Saved' : 'Save phrase', () => {
+        if (!profile.phrases.includes(h.said)) { profile.phrases.unshift(h.said); profile.phrases = profile.phrases.slice(0, 300); save(); renderHistory(); }
+      });
+      row.append(txt, play, fix, star); li.append(row);
+      if (norm(h.heard) !== norm(h.said)) {
+        const hd = document.createElement('span'); hd.className = 'heard'; hd.textContent = 'Heard: ' + h.heard; li.append(hd);
+      }
+      function editMode() {
+        row.innerHTML = '';
+        const inp = document.createElement('input'); inp.value = h.said; inp.setAttribute('aria-label', 'What was meant');
+        const ok = btn('Save fix', () => { const v = inp.value.trim(); if (v) teach(idx, v); });
+        const no = btn('Cancel', renderHistory);
+        inp.addEventListener('keydown', ev => { if (ev.key === 'Enter') ok.click(); if (ev.key === 'Escape') renderHistory(); });
+        row.append(inp, ok, no); inp.focus(); inp.select();
+      }
+      ul.append(li);
+    });
+  }
+
+  // A correction teaches three things: the whole phrase, any single-word swaps, and the student's vocabulary.
+  function teach(idx, corrected) {
+    const h = history[idx];
+    const heardN = norm(h.heard), corrN = norm(corrected);
+    if (heardN && heardN !== corrN) profile.fixes[heardN] = corrected;
+    const hw = heardN.split(' '), cw = corrN.split(' ');
+    if (hw.length === cw.length) {
+      const diffs = hw.map((w, i) => [w, cw[i]]).filter(([a, b]) => a !== b);
+      if (diffs.length && diffs.length <= 2) diffs.forEach(([a, b]) => { if (a.length > 2) profile.fixes[a] = b; });
+    }
+    if (!profile.phrases.includes(corrected)) profile.phrases.unshift(corrected);
+    learnWords(corrected); learnWords(corrected);
+    h.said = corrected; save(); renderHistory(); show(corrected); speak(corrected);
+  }
+
+  function renderLearned() {
+    $('nWords').textContent = Object.values(profile.words).reduce((a, b) => a + b, 0);
+    $('nFixes').textContent = Object.keys(profile.fixes).length;
+    $('nPhrases').textContent = profile.phrases.length;
+    const ul = $('fixes'); ul.innerHTML = '';
+    const entries = Object.entries(profile.fixes);
+    if (!entries.length) { ul.innerHTML = '<li class="empty-note">Fixes you make will show here. Remove any that cause trouble.</li>'; }
+    entries.reverse().forEach(([k, v]) => {
+      const li = document.createElement('li'); li.className = 'item';
+      const row = document.createElement('div'); row.className = 'row';
+      const t = document.createElement('span'); t.className = 'txt';
+      t.textContent = '“' + k + '” → ' + v;
+      row.append(t, btn('Remove', () => { delete profile.fixes[k]; save(); }));
+      li.append(row); ul.append(li);
+    });
+  }
+
+  function btn(label, fn) { const b = document.createElement('button'); b.type = 'button'; b.textContent = label; b.onclick = fn; return b; }
+
+  async function start() {
+    running = true; $('toggle').textContent = 'Stop'; $('toggle').classList.add('on');
+    setStatus('listening', 'Listening'); $('live').textContent = '';
+    startRec();
+    try { wakeLock = await navigator.wakeLock?.request('screen'); } catch(e) {}
+  }
+  function stop() {
+    running = false; clearTimeout(timer);
+    if (rec) { try { rec.abort(); } catch(e) {} }
+    if (finals.length || interim) flush();
+    $('toggle').textContent = 'Start'; $('toggle').classList.remove('on');
+    if (!speaking) setStatus('idle', 'Ready');
+    try { wakeLock?.release(); } catch(e) {}
+  }
+
+  // ---------- settings ----------
+  function loadVoices() {
+    const vs = speechSynthesis.getVoices(); const sel = $('voice'); sel.innerHTML = '';
+    const def = document.createElement('option'); def.value = ''; def.textContent = 'Browser default'; sel.append(def);
+    vs.forEach(v => { const o = document.createElement('option'); o.value = v.voiceURI; o.textContent = v.name + ' (' + v.lang + ')'; sel.append(o); });
+    sel.value = profile.settings.voice;
+  }
+  function syncSettings() {
+    $('rate').value = profile.settings.rate; $('rateVal').textContent = profile.settings.rate.toFixed(1) + '×';
+    $('pause').value = profile.settings.pause; $('pauseVal').textContent = (profile.settings.pause / 1000).toFixed(1) + ' sec';
+    $('lang').value = profile.settings.lang; $('snap').checked = profile.settings.snap;
+  }
+  $('rate').oninput = e => { profile.settings.rate = +e.target.value; syncSettings(); save(); };
+  $('pause').oninput = e => { profile.settings.pause = +e.target.value; syncSettings(); save(); };
+  $('voice').onchange = e => { profile.settings.voice = e.target.value; save(); };
+  $('lang').onchange = e => { profile.settings.lang = e.target.value; save(); if (running) { stop(); start(); } };
+  $('snap').onchange = e => { profile.settings.snap = e.target.checked; save(); };
+
+  $('export').onclick = () => {
+    const blob = new Blob([JSON.stringify(profile, null, 2)], { type:'application/json' });
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+    a.download = 'speakback-profile.json'; document.body.append(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+  };
+  $('importBtn').onclick = () => $('importFile').click();
+  $('importFile').onchange = e => {
+    const f = e.target.files[0]; if (!f) return;
+    f.text().then(t => {
+      try {
+        const p = JSON.parse(t);
+        profile = Object.assign(JSON.parse(JSON.stringify(defaults)), p);
+        profile.settings = Object.assign({}, defaults.settings, p.settings || {});
+        save(); syncSettings(); loadVoices(); renderHistory();
+      } catch(err) { $('live').textContent = 'That file is not a SpeakBack profile.'; }
+    });
+    e.target.value = '';
+  };
+  $('reset').onclick = () => { $('resetConfirm').hidden = false; };
+  $('resetNo').onclick = () => { $('resetConfirm').hidden = true; };
+  $('resetYes').onclick = () => {
+    const s = profile.settings; profile = JSON.parse(JSON.stringify(defaults)); profile.settings = s;
+    save(); renderHistory(); $('resetConfirm').hidden = true;
+  };
+
+  $('toggle').onclick = () => running ? stop() : start();
+  $('repeat').onclick = () => speak(lastSaid);
+  document.addEventListener('keydown', e => {
+    if (e.code === 'Space' && !/INPUT|SELECT|TEXTAREA|BUTTON/.test(document.activeElement.tagName)) { e.preventDefault(); $('toggle').click(); }
+  });
+
+  if (!SR) { $('unsupported').hidden = false; $('toggle').disabled = true; }
+  speechSynthesis.onvoiceschanged = loadVoices;
+  loadVoices(); syncSettings(); renderLearned(); renderHistory();
+})();
+</script>
+</body>
+</html>
